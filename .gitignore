@@ -33,6 +33,7 @@ gmt.history
 # Output images (keep sample)
 *.png
 !temp_style_map.png
+!GeoNet_map.png
 
 # Environment files
 .env
