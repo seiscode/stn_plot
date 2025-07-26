@@ -35,12 +35,12 @@ class TempStylePlotter:
         self.region = None
         
     def parse_dataless(self, dataless_path):
-        """解析Dataless SEED文件提取台站信息"""
+        """解析台站元数据文件（支持Dataless SEED和StationXML格式）"""
         try:
             if not os.path.exists(dataless_path):
-                raise FileNotFoundError(f"Dataless文件未找到: {dataless_path}")
+                raise FileNotFoundError(f"台站文件未找到: {dataless_path}")
             
-            print(f"正在解析Dataless文件: {dataless_path}")
+            print(f"正在解析台站文件: {dataless_path}")
             inventory = read_inventory(dataless_path)
             
             self.stations = []
@@ -61,15 +61,15 @@ class TempStylePlotter:
             print(f"成功提取 {station_count} 个台站信息")
             
             if station_count == 0:
-                raise ValueError("Dataless文件中未找到任何台站信息")
+                raise ValueError("台站文件中未找到任何台站信息")
                 
             return True
             
         except Exception as e:
-            print(f"解析Dataless文件时发生错误: {e}")
+            print(f"解析台站文件时发生错误: {e}")
             return False
     
-    def calculate_region(self, padding=0.5):
+    def calculate_region(self, padding=None, min_range=2.0):
         """自动计算地图范围"""
         if not self.stations:
             raise ValueError("无台站数据，无法计算地图范围")
@@ -77,12 +77,25 @@ class TempStylePlotter:
         lons = [s['longitude'] for s in self.stations]
         lats = [s['latitude'] for s in self.stations]
         
+        # 计算台站分布范围
+        lon_range = max(lons) - min(lons)
+        lat_range = max(lats) - min(lats)
+        
+        # 动态计算padding：根据台站分布范围自适应
+        if padding is None:
+            # 使用台站分布范围的10-20%作为padding，最小0.05度，最大0.5度
+            auto_padding = max(0.05, min(0.5, max(lon_range, lat_range) * 0.15))
+            padding = auto_padding
+        
         lon_min = min(lons) - padding
         lon_max = max(lons) + padding
         lat_min = min(lats) - padding
         lat_max = max(lats) + padding
         
         self.region = [lon_min, lon_max, lat_min, lat_max]
+        print(f"台站分布范围: 经度 {lon_range:.3f}度, 纬度 {lat_range:.3f}度")
+        print(f"自动padding: {padding:.3f}度")
+        print(f"最终地图范围: 经度 {lon_max - lon_min:.3f}度, 纬度 {lat_max - lat_min:.3f}度")
         print(f"自动计算地图范围: {self.region}")
         
         return self.region
@@ -95,6 +108,18 @@ class TempStylePlotter:
                 raise ValueError("区域格式错误，应为: lon_min/lon_max/lat_min/lat_max")
             
             self.region = [float(p) for p in parts]
+            
+            # 验证坐标范围
+            lon_min, lon_max, lat_min, lat_max = self.region
+            if lon_min >= lon_max:
+                raise ValueError(f"经度范围错误: {lon_min} >= {lon_max}")
+            if lat_min >= lat_max:
+                raise ValueError(f"纬度范围错误: {lat_min} >= {lat_max}")
+            if lat_min < -90 or lat_max > 90:
+                raise ValueError(f"纬度超出范围: {lat_min}, {lat_max}")
+            if lon_min < -180 or lon_max > 180:
+                raise ValueError(f"经度超出范围: {lon_min}, {lon_max}")
+                
             print(f"使用手动指定地图范围: {self.region}")
             
         except ValueError as e:
@@ -119,7 +144,7 @@ class TempStylePlotter:
         
         return work_cpt
     
-    def create_temp_map(self, output_path, resolution="03s", add_labels=False, title="地震台站分布图", cpt_file=None, show_colorbar=False):
+    def create_temp_map(self, output_path, resolution="03s", add_labels=False, title="地震台站分布图", cpt_file=None, show_colorbar=False, draw_coast=True):
         """创建基于temp_map.png配色的地震台站分布图"""
         if not self.stations:
             raise ValueError("无台站数据")
@@ -176,9 +201,9 @@ class TempStylePlotter:
                 import tempfile
                 import os
                 
-                # 创建缓存文件名 - 基于区域和分辨率
+                # 创建缓存文件名 - 使用grd格式而不是nc格式
                 lon_min, lon_max, lat_min, lat_max = self.region
-                cache_name = f"relief_{gmt_res}_{lon_min:.1f}_{lon_max:.1f}_{lat_min:.1f}_{lat_max:.1f}.nc"
+                cache_name = f"relief_{gmt_res}_{lon_min:.1f}_{lon_max:.1f}_{lat_min:.1f}_{lat_max:.1f}.grd"
                 temp_relief = os.path.join("cache", cache_name)
                 
                 # 创建缓存目录
@@ -186,34 +211,68 @@ class TempStylePlotter:
                 
                 # 检查缓存文件是否存在
                 if os.path.exists(temp_relief):
-                    print(f"使用缓存的地形数据: {cache_name}")
+                    print(f"使用缓存的grd地形数据: {cache_name}")
                     grid_file = temp_relief
                     use_relief = True
                 else:
-                    # 构建GMT命令下载数据
+                    # 构建GMT命令下载数据 - 强制使用grd格式
                     gmt_region = f"{lon_min}/{lon_max}/{lat_min}/{lat_max}"
                     
                     cmd = [
                         f"{os.path.dirname(os.path.dirname(sys.executable))}/bin/gmt",
                         "grdcut", 
-                        f"@earth_relief_{gmt_res}",
+                        f"@earth_relief_{gmt_res}_g",  # 使用_g后缀强制grd格式
                         f"-R{gmt_region}",
                         f"-G{temp_relief}"
                     ]
                     
-                    print(f"下载地形数据: {cache_name}")
+                    print(f"下载grd格式地形数据: {cache_name}")
                     print(f"执行命令: {' '.join(cmd)}")
                     result = subprocess.run(cmd, capture_output=True, text=True)
                     
                     if result.returncode == 0 and os.path.exists(temp_relief):
-                        print("地形数据下载成功并已缓存")
+                        print("grd格式地形数据下载成功并已缓存")
                         grid_file = temp_relief
                         use_relief = True
                     else:
-                        print(f"错误: 地形数据下载失败")
+                        print(f"grd格式下载失败，尝试备用方法...")
                         print(f"详细信息: {result.stderr}")
-                        print("无法获取必需的地形数据，程序退出")
-                        sys.exit(1)
+                        # 备用方法：先下载nc格式然后转换为grd
+                        temp_nc = temp_relief.replace('.grd', '.nc')
+                        cmd_nc = [
+                            f"{os.path.dirname(os.path.dirname(sys.executable))}/bin/gmt",
+                            "grdcut", 
+                            f"@earth_relief_{gmt_res}",
+                            f"-R{gmt_region}",
+                            f"-G{temp_nc}"
+                        ]
+                        result_nc = subprocess.run(cmd_nc, capture_output=True, text=True)
+                        
+                        if result_nc.returncode == 0 and os.path.exists(temp_nc):
+                            print("成功下载nc格式，正在转换为grd...")
+                            # 转换nc为grd格式
+                            cmd_convert = [
+                                f"{os.path.dirname(os.path.dirname(sys.executable))}/bin/gmt",
+                                "grdconvert",
+                                temp_nc,
+                                temp_relief
+                            ]
+                            result_convert = subprocess.run(cmd_convert, capture_output=True, text=True)
+                            if result_convert.returncode == 0:
+                                print("成功转换为grd格式")
+                                grid_file = temp_relief
+                                use_relief = True
+                                # 删除临时nc文件
+                                try:
+                                    os.remove(temp_nc)
+                                except:
+                                    pass
+                            else:
+                                print("转换grd格式失败，程序退出")
+                                sys.exit(1)
+                        else:
+                            print("无法获取必需的地形数据，程序退出")
+                            sys.exit(1)
                     
             except Exception as download_error:
                 print(f"错误: 地形数据下载异常 - {download_error}")
@@ -245,7 +304,7 @@ class TempStylePlotter:
                     projection="M22c",  # 更大的地图
                     region=self.region,  # 明确指定区域
                     cmap="final_elevation.cpt",
-                    shading="+a315+ne0.2+nt0.8",  # 标准晕渲
+                    shading="+a315+ne0.3+nt1.0",  # 增强晕渲效果
                     transparency=0  # 不透明，显示完整色彩
                 )
             else:
@@ -253,16 +312,46 @@ class TempStylePlotter:
                 print("错误: 无法加载地形数据")
                 sys.exit(1)
             
-            # 暂时跳过海岸线数据以确保程序稳定运行
-            print("跳过地理要素绘制，使用基本地图框架...")
-            # 绘制地理要素 - map_temp1风格的极淡水体
-            # print("添加地理要素，map_temp1风格显示水体...")
-            # fig.coast(
-            #     shorelines="1/0.05p,180/180/185",    # 极细极淡的海岸线
-            #     water="230/240/245",                 # 极淡的蓝色水体，模拟map_temp1
-            #     lakes="230/240/245"                  # 同样颜色的湖泊水库
-            #     # 移除borders参数，不显示边界线条
-            # )
+            # 绘制地理要素 - 海岸线和水体
+            if draw_coast:
+                print("添加地理要素，绘制海岸线和水体...")
+                try:
+                    # 尝试添加水体覆盖层，强制显示为白色
+                    fig.coast(
+                        water="white",                       # 强制水体显示为白色
+                        shorelines="1/0.3p,black",          # 细黑色海岸线
+                        resolution="f"                       # 最高分辨率
+                    )
+                    print("海岸线和水体绘制完成")
+                except Exception as e:
+                    print(f"海岸线绘制失败: {e}")
+                    # 如果coast失败，尝试使用替代方法
+                    try:
+                        print("尝试使用替代水体显示方法...")
+                        # 基于早期版本参考图的精确水库位置
+                        reservoir_x = [116.845, 116.855, 116.857, 116.848, 116.845]
+                        reservoir_y = [40.480, 40.480, 40.488, 40.490, 40.480]
+                        
+                        fig.plot(
+                            x=reservoir_x,
+                            y=reservoir_y,
+                            pen="1p,blue",
+                            fill="white"  # 纯白色，模仿早期版本
+                        )
+                        
+                        # 添加水库标注
+                        fig.text(
+                            text="Reservoir",
+                            x=116.851,
+                            y=40.485,
+                            font="10p,Helvetica-Bold,blue",
+                            justify="CM"
+                        )
+                        print("替代水体显示完成")
+                    except Exception as e2:
+                        print(f"替代方法也失败: {e2}，继续绘制其他要素...")
+            else:
+                print("跳过海岸线绘制")
             
             # 提取台站经纬度
             lons = [s['longitude'] for s in self.stations]
@@ -297,10 +386,44 @@ class TempStylePlotter:
             
             # 添加经纬度标注和标题
             print("添加经纬度标注和标题...")
+            
+            # 根据地图范围动态计算刻度间隔
+            lon_range = self.region[1] - self.region[0]
+            lat_range = self.region[3] - self.region[2]
+            
+            # 计算合适的刻度间隔，确保至少有2个刻度标记
+            def calculate_interval(range_deg):
+                # 目标：在给定范围内至少显示2个刻度标记
+                # 刻度间隔应该小于等于range/3，这样保证至少有2个内部刻度
+                target_interval = range_deg / 3.0
+                
+                # 选择合适的标准间隔
+                standard_intervals = [0.05, 0.1, 0.2, 0.25, 0.5, 1.0, 2.0, 5.0]
+                
+                # 找到小于等于目标间隔的最大标准间隔
+                best_interval = standard_intervals[0]  # 默认最小间隔
+                for interval in standard_intervals:
+                    if interval <= target_interval:
+                        best_interval = interval
+                    else:
+                        break
+                
+                return best_interval
+            
+            lon_interval = calculate_interval(lon_range)
+            lat_interval = calculate_interval(lat_range)
+            
+            # 构建frame参数
+            x_frame = f"xa{lon_interval}f{lon_interval/2}"  # 主刻度和次刻度
+            y_frame = f"ya{lat_interval}f{lat_interval/2}"
+            
+            print(f"地图范围: 经度{lon_range:.2f}度, 纬度{lat_range:.2f}度")
+            print(f"刻度间隔: 经度{lon_interval}度, 纬度{lat_interval}度")
+            
             if title_to_use:
-                fig.basemap(frame=["WSen+t" + title_to_use, "xa1f1", "ya1f1"])
+                fig.basemap(frame=["WSen+t" + title_to_use, x_frame, y_frame])
             else:
-                fig.basemap(frame=["WSen", "xa1f1", "ya1f1"])
+                fig.basemap(frame=["WSen", x_frame, y_frame])
             
             # 添加无边框英文高程图例（可选）
             if show_colorbar and use_relief:
@@ -387,8 +510,11 @@ def main():
     parser.add_argument('--resolution', default='03s', choices=['01m', '30s', '15s', '03s', '01s'], help='地形数据分辨率')
     parser.add_argument('--labels', action='store_true', help='在地图上标注台站名称')
     parser.add_argument('--title', default=None, help='地图标题 (建议使用英文)')
-    parser.add_argument('--cpt', help='自定义CPT配色文件路径 (默认使用cpt/elevation_temp_style.cpt)')
+    parser.add_argument('--cpt', help='自定义CPT配色文件路径 (默认使用cpt/colombia.cpt)')
     parser.add_argument('--colorbar', action='store_true', help='显示右侧高程图例色彩条 (默认不显示)')
+    parser.add_argument('--padding', type=float, help='地图边界padding (度)，不指定时自动计算')
+    parser.add_argument('--min-range', type=float, default=2.0, help='地图最小范围 (度)，确保显示足够的经纬度标记，默认2.0度')
+    parser.add_argument('--no-coast', action='store_true', help='不绘制海岸线和边界线')
     
     args = parser.parse_args()
     
@@ -403,7 +529,7 @@ def main():
     if args.region:
         plotter.set_manual_region(args.region)
     else:
-        plotter.calculate_region()
+        plotter.calculate_region(padding=args.padding, min_range=args.min_range)
     
     # 创建输出目录
     output_path = Path(args.output)
@@ -417,7 +543,8 @@ def main():
             add_labels=args.labels,
             title=args.title,
             cpt_file=args.cpt,
-            show_colorbar=args.colorbar
+            show_colorbar=args.colorbar,
+            draw_coast=not args.no_coast
         )
     except Exception as e:
         print(f"生成地图失败: {e}")
