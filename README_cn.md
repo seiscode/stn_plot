@@ -49,13 +49,13 @@ python stn_plot.py --dataless BJ.dataless \
                    --output BJ_wiki_style.png \
                    --labels \
                    --colorbar \
-                   --title "Beijing Seismic Network"
+                   --title "Seismic Network"
 
 # 指定地图范围和分辨率
 python stn_plot.py --dataless BJ.dataless \
                    --region 115/118/39/42 \
                    --resolution 15s \
-                   --output BJ_custom_region.png
+                   --output custom_region.png
 ```
 
 ## 参数说明
