@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 """
-基于temp_map.png配色的地震台站分布图绘制工具
-使用极淡雅的浅绿色和浅灰色配色方案
+地震台站分布图绘制工具
 
 作者: muly
-版本: temp_style
+版本: V1.0
 日期: 2025-07-25
 """
 
@@ -105,7 +104,7 @@ class TempStylePlotter:
     def create_custom_elevation_cpt(self, grid, cpt_file=None):
         """创建或加载自定义海拔色彩表"""
         if cpt_file is None:
-            cpt_file = os.path.join("cpt", "elevation_temp_style.cpt")
+            cpt_file = os.path.join("cpt", "colombia.cpt")
         
         print(f"使用CPT配色文件: {cpt_file}")
         
@@ -135,57 +134,135 @@ class TempStylePlotter:
         pygmt.config(MAP_FRAME_TYPE="plain")  # 使用简洁边框类型
         pygmt.config(MAP_FRAME_PEN="0p")      # 设置边框线宽为0，去掉黑边
         
-        # 尝试设置中文字体环境
-        try:
-            pygmt.config(PS_CHAR_ENCODING="Standard+")
-            pygmt.config(FONT="12p,39,black")  # 使用39号中文字体
-            print("尝试使用GMT中文字体配置...")
-        except:
-            print("GMT中文字体配置失败，使用默认字体...")
+        # 配置PyGMT环境
+        print("配置PyGMT环境...")
+        
+        # 获取conda环境路径并设置PATH
+        import os
+        conda_env = os.path.dirname(os.path.dirname(sys.executable))
+        current_path = os.environ.get('PATH', '')
+        if f"{conda_env}/bin" not in current_path:
+            os.environ['PATH'] = f"{conda_env}/bin:{current_path}"
+            print(f"已将{conda_env}/bin添加到PATH")
+        
+        # 使用默认字体配置，避免CJK字体问题
+        pygmt.config(FONT_ANNOT_PRIMARY="12p,Helvetica,black")
+        pygmt.config(FONT_LABEL="14p,Helvetica,black") 
+        pygmt.config(FONT_TITLE="18p,Helvetica-Bold,black")
+        
+        print("PyGMT环境配置完成 - 使用默认字体")
         
         # 初始化PyGMT图形
         fig = pygmt.Figure()
         
         try:
-            # 加载高精度地形数据
-            print("正在下载高精度地形数据...")
-            grid = pygmt.datasets.load_earth_relief(
-                resolution=resolution, 
-                region=self.region
-            )
+            # 使用GMT命令预下载地形数据
+            print(f"正在下载{resolution}分辨率地形数据...")
+            use_relief = False
+            grid_file = None
             
-            # 加载自定义海拔色彩表
-            custom_cpt = self.create_custom_elevation_cpt(grid, cpt_file)
+            # 构建GMT分辨率字符串
+            resolution_map = {
+                '01m': '01m',  # 1弧分
+                '30s': '30s',  # 30弧秒 
+                '15s': '15s',  # 15弧秒
+                '03s': '03s',  # 3弧秒
+                '01s': '01s'   # 1弧秒 (最高分辨率)
+            }
+            gmt_res = resolution_map.get(resolution, '30s')
             
-            # 使用自定义海拔配色方案
-            min_elev = float(grid.min().values)
-            max_elev = float(grid.max().values)
+            try:
+                import subprocess
+                import tempfile
+                import os
+                
+                # 创建缓存文件名 - 基于区域和分辨率
+                lon_min, lon_max, lat_min, lat_max = self.region
+                cache_name = f"relief_{gmt_res}_{lon_min:.1f}_{lon_max:.1f}_{lat_min:.1f}_{lat_max:.1f}.nc"
+                temp_relief = os.path.join("cache", cache_name)
+                
+                # 创建缓存目录
+                os.makedirs("cache", exist_ok=True)
+                
+                # 检查缓存文件是否存在
+                if os.path.exists(temp_relief):
+                    print(f"使用缓存的地形数据: {cache_name}")
+                    grid_file = temp_relief
+                    use_relief = True
+                else:
+                    # 构建GMT命令下载数据
+                    gmt_region = f"{lon_min}/{lon_max}/{lat_min}/{lat_max}"
+                    
+                    cmd = [
+                        f"{os.path.dirname(os.path.dirname(sys.executable))}/bin/gmt",
+                        "grdcut", 
+                        f"@earth_relief_{gmt_res}",
+                        f"-R{gmt_region}",
+                        f"-G{temp_relief}"
+                    ]
+                    
+                    print(f"下载地形数据: {cache_name}")
+                    print(f"执行命令: {' '.join(cmd)}")
+                    result = subprocess.run(cmd, capture_output=True, text=True)
+                    
+                    if result.returncode == 0 and os.path.exists(temp_relief):
+                        print("地形数据下载成功并已缓存")
+                        grid_file = temp_relief
+                        use_relief = True
+                    else:
+                        print(f"错误: 地形数据下载失败")
+                        print(f"详细信息: {result.stderr}")
+                        print("无法获取必需的地形数据，程序退出")
+                        sys.exit(1)
+                    
+            except Exception as download_error:
+                print(f"错误: 地形数据下载异常 - {download_error}")
+                print("无法获取必需的地形数据，程序退出")
+                sys.exit(1)
             
-            # 使用外部CPT文件配色方案
-            print(f"海拔范围: {min_elev:.0f}m 到 {max_elev:.0f}m")
+            if use_relief and grid_file:
+                # 加载自定义海拔色彩表
+                custom_cpt = self.create_custom_elevation_cpt(None, cpt_file)
+                
+                # 读取地形数据获取海拔范围
+                try:
+                    import xarray as xr
+                    grid_data = xr.open_dataarray(grid_file)
+                    min_elev = float(grid_data.min().values)
+                    max_elev = float(grid_data.max().values)
+                    print(f"海拔范围: {min_elev:.0f}m 到 {max_elev:.0f}m")
+                except:
+                    print("无法读取海拔范围信息")
+                
+                # 复制自定义配色为最终配色
+                import shutil
+                shutil.copy(custom_cpt, "final_elevation.cpt")
+                
+                # 绘制经典地形配色背景
+                print("绘制经典地形配色背景...")
+                fig.grdimage(
+                    grid=grid_file,
+                    projection="M22c",  # 更大的地图
+                    region=self.region,  # 明确指定区域
+                    cmap="final_elevation.cpt",
+                    shading="+a315+ne0.2+nt0.8",  # 标准晕渲
+                    transparency=0  # 不透明，显示完整色彩
+                )
+            else:
+                # 这里不应该到达，因为数据下载失败会直接退出
+                print("错误: 无法加载地形数据")
+                sys.exit(1)
             
-            # 复制自定义配色为最终配色
-            import shutil
-            shutil.copy(custom_cpt, "final_elevation.cpt")
-            
-            # 绘制经典地形配色背景
-            print("绘制经典地形配色背景...")
-            fig.grdimage(
-                grid=grid,
-                projection="M22c",  # 更大的地图
-                cmap="final_elevation.cpt",
-                shading="+a315+ne0.2+nt0.8",  # 标准晕渲
-                transparency=0  # 不透明，显示完整色彩
-            )
-            
+            # 暂时跳过海岸线数据以确保程序稳定运行
+            print("跳过地理要素绘制，使用基本地图框架...")
             # 绘制地理要素 - map_temp1风格的极淡水体
-            print("添加地理要素，map_temp1风格显示水体...")
-            fig.coast(
-                shorelines="1/0.05p,180/180/185",    # 极细极淡的海岸线
-                water="230/240/245",                 # 极淡的蓝色水体，模拟map_temp1
-                lakes="230/240/245"                  # 同样颜色的湖泊水库
-                # 移除borders参数，不显示边界线条
-            )
+            # print("添加地理要素，map_temp1风格显示水体...")
+            # fig.coast(
+            #     shorelines="1/0.05p,180/180/185",    # 极细极淡的海岸线
+            #     water="230/240/245",                 # 极淡的蓝色水体，模拟map_temp1
+            #     lakes="230/240/245"                  # 同样颜色的湖泊水库
+            #     # 移除borders参数，不显示边界线条
+            # )
             
             # 提取台站经纬度
             lons = [s['longitude'] for s in self.stations]
@@ -215,37 +292,18 @@ class TempStylePlotter:
                         offset="0.3c/0.1c"
                     )
             
-            # 添加经纬度标注 - 去掉黑色边框但保留标注
-            print("添加经纬度标注...")
-            fig.basemap(frame=["a1f1", "WSen"])  # 显示标注，去掉边框线
+            # 处理标题
+            title_to_use = title if title else None
             
-            # 添加中文标题 - 使用深灰色
-            print("添加地图标题...")
-            center_lon = (self.region[0] + self.region[1]) / 2
-            title_lat = self.region[3] + (self.region[3] - self.region[2]) * 0.08
-            
-            # 添加标题 - GMT中文显示较复杂，建议使用英文
-            if title:
-                # 如果是中文标题，使用英文替代并提示
-                if any('\u4e00' <= char <= '\u9fff' for char in title):
-                    fallback_title = "Beijing Seismic Network"
-                    print(f"检测到中文标题: {title}")
-                    print(f"GMT中文字体配置复杂，使用英文标题: {fallback_title}")
-                    print("提示: 如需中文标题，建议使用图像编辑软件后期添加")
-                    title_to_use = fallback_title
-                else:
-                    title_to_use = title
-                
-                fig.text(
-                    text=title_to_use,
-                    x=center_lon,
-                    y=title_lat,
-                    font="24p,Helvetica-Bold,gray30",
-                    justify="CB"
-                )
+            # 添加经纬度标注和标题
+            print("添加经纬度标注和标题...")
+            if title_to_use:
+                fig.basemap(frame=["WSen+t" + title_to_use, "xa1f1", "ya1f1"])
+            else:
+                fig.basemap(frame=["WSen", "xa1f1", "ya1f1"])
             
             # 添加无边框英文高程图例（可选）
-            if show_colorbar:
+            if show_colorbar and use_relief:
                 print("添加高程图例...")
                 fig.colorbar(
                     frame=["x+lElevation (m)", "y+lm"],
@@ -253,7 +311,10 @@ class TempStylePlotter:
                     # 移除box参数，不显示边框
                 )
             else:
-                print("跳过高程图例显示")
+                if not use_relief:
+                    print("跳过高程图例显示 (无地形数据)")
+                else:
+                    print("跳过高程图例显示")
             
             # 不添加指北针和比例尺，保持简洁
             # print("添加比例尺和指北针...")
@@ -261,19 +322,45 @@ class TempStylePlotter:
             
             # 保存地图
             print(f"保存地图到: {output_path}")
-            fig.savefig(
-                output_path, 
-                dpi=300, 
-                crop=True,
-                anti_alias=True
-            )
             
-            print("temp_map.png风格地图生成完成！")
+            # 检测输出格式
+            output_format = Path(output_path).suffix.lower()
+            if output_format == '.pdf':
+                print("输出PDF格式...")
+                fig.savefig(
+                    output_path, 
+                    crop=True,
+                    anti_alias=True
+                )
+            else:
+                # PNG, JPG等光栅格式
+                print(f"输出{output_format.upper()}格式...")
+                fig.savefig(
+                    output_path, 
+                    dpi=300, 
+                    crop=True,
+                    anti_alias=True
+                )
+            
+            # 根据输出格式显示完成信息
+            if output_format == '.pdf':
+                print("PDF格式地图生成完成！")
+            else:
+                print("temp_map.png风格地图生成完成！")
             
             # 清理临时文件
-            for temp_file in ["custom_elevation.cpt", "temp1_base.cpt", "final_elevation.cpt", "gray_base.cpt", "light_base.cpt", "green_base.cpt", "terrain_base.cpt", "soft_base.cpt", "low_elevation.cpt", "high_elevation.cpt"]:
+            temp_files = ["custom_elevation.cpt", "temp1_base.cpt", "final_elevation.cpt", "gray_base.cpt", "light_base.cpt", "green_base.cpt", "terrain_base.cpt", "soft_base.cpt", "low_elevation.cpt", "high_elevation.cpt"]
+            
+            # 不删除缓存的地形数据文件，保留供下次使用
+            # if use_relief and grid_file and os.path.exists(grid_file):
+            #     temp_files.append(grid_file)
+                
+            for temp_file in temp_files:
                 if os.path.exists(temp_file):
-                    os.remove(temp_file)
+                    try:
+                        os.remove(temp_file)
+                    except:
+                        pass  # 忽略删除失败
             
         except Exception as e:
             print(f"绘制地图时发生错误: {e}")
@@ -288,17 +375,18 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 示例用法:
-  python plot_temp_style.py --dataless BJ.dataless --output temp_style_map.png --resolution 03s --labels --title "北京地震台网分布图"
-  python plot_temp_style.py --dataless BJ.dataless --cpt custom_colors.cpt --output custom_map.png
+  python stn_plot.py --dataless BJ.dataless --output temp_style_map.png --resolution 03s --labels --title "北京地震台网分布图"
+  python stn_plot.py --dataless BJ.dataless --cpt custom_colors.cpt --output custom_map.png
+  python stn_plot.py --dataless BJ.dataless --output station_map.pdf --labels --title "Seismic Station Distribution"
         """
     )
     
     parser.add_argument('--dataless', required=True, help='Dataless SEED文件路径')
-    parser.add_argument('--output', default='temp_style_map.png', help='输出文件路径')
+    parser.add_argument('--output', default='temp_style_map.png', help='输出文件路径 (支持PNG, PDF, JPG格式)')
     parser.add_argument('--region', help='地图范围 lon_min/lon_max/lat_min/lat_max')
     parser.add_argument('--resolution', default='03s', choices=['01m', '30s', '15s', '03s', '01s'], help='地形数据分辨率')
     parser.add_argument('--labels', action='store_true', help='在地图上标注台站名称')
-    parser.add_argument('--title', default='Seismic Station Distribution', help='地图标题 (建议使用英文)')
+    parser.add_argument('--title', default=None, help='地图标题 (建议使用英文)')
     parser.add_argument('--cpt', help='自定义CPT配色文件路径 (默认使用cpt/elevation_temp_style.cpt)')
     parser.add_argument('--colorbar', action='store_true', help='显示右侧高程图例色彩条 (默认不显示)')
     

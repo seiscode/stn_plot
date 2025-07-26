@@ -10,7 +10,9 @@ A Python command-line tool for generating high-quality seismic station distribut
 - Fine 3D shaded relief terrain effects
 - Automatic optimal map bounds calculation or manual specification
 - Optional station name labels and elevation colorbar
-- High-quality PNG output (300 DPI)
+- Multiple output formats: PNG, PDF, JPG with 300 DPI resolution
+- Intelligent data caching system to avoid repeated downloads
+- Error handling with informative messages for data download failures
 
 ## Installation
 
@@ -43,10 +45,10 @@ python stn_plot.py --dataless BJ.dataless
 # Generate map with default color scheme
 python stn_plot.py --dataless BJ.dataless --output BJ_network_map.png
 
-# Use custom color scheme with labels
+# Use custom color scheme with labels and PDF output
 python stn_plot.py --dataless BJ.dataless \
-                   --cpt cpt/wiki_2_0_adjusted.cpt \
-                   --output BJ_wiki_style.png \
+                   --cpt cpt/colombia.cpt \
+                   --output BJ_network_map.pdf \
                    --labels \
                    --colorbar \
                    --title "Seismic Network"
@@ -55,7 +57,12 @@ python stn_plot.py --dataless BJ.dataless \
 python stn_plot.py --dataless BJ.dataless \
                    --region 115/118/39/42 \
                    --resolution 15s \
-                   --output custom_region.png
+                   --output BJ_custom_region.png
+
+# High-resolution map without title
+python stn_plot.py --dataless BJ.dataless \
+                   --resolution 01s \
+                   --output high_res_map.png
 ```
 
 ## Parameters
@@ -65,11 +72,12 @@ python stn_plot.py --dataless BJ.dataless \
 
 ### Optional Parameters
 - `--output`: Output file path (default: temp_style_map.png)
+  - Supports PNG, PDF, JPG formats based on file extension
 - `--region`: Map bounds lon_min/lon_max/lat_min/lat_max
 - `--resolution`: Topographic data resolution (01m, 30s, 15s, 03s, 01s), default: 03s
 - `--labels`: Add station name labels to map
-- `--title`: Map title (default: 'Seismic Station Distribution')
-- `--cpt`: Custom CPT color palette file path (default: cpt/elevation_temp_style.cpt)
+- `--title`: Map title (no default title - only shows when specified)
+- `--cpt`: Custom CPT color palette file path (default: cpt/colombia.cpt)
 - `--colorbar`: Show elevation colorbar on right side (default: not shown)
 
 ## CPT Color Schemes
@@ -77,8 +85,8 @@ python stn_plot.py --dataless BJ.dataless \
 The project includes multiple preset color schemes located in the `cpt/` directory:
 
 ### Available Color Schemes
-- **elevation_temp_style.cpt**: Default green-brown elevation scheme (gentle style)
-- **light_green_plains_accurate.cpt**: Light green plains color scheme
+- **colombia.cpt**: Default Colombia-inspired elevation scheme (current default)
+- **elevation_temp_style.cpt**: Green-brown elevation scheme (gentle style)
 - **mars_adjusted.cpt**: Mars terrain style
 - **usgs_style.cpt**: USGS standard colors (colorblind-friendly)
 - **wiki_2_0_adjusted.cpt**: Wikipedia style
@@ -108,11 +116,13 @@ stn_plot/
 ├── generate_cpt_previews.py        # CPT preview generation script
 ├── BJ.dataless                    # Sample data file
 ├── cpt/                           # CPT color palette files directory
-│   ├── elevation_temp_style.cpt   # Default color scheme
+│   ├── colombia.cpt               # Default color scheme
+│   ├── elevation_temp_style.cpt   # Alternative color scheme
 │   ├── mars_adjusted.cpt          # Mars style
 │   ├── usgs_style.cpt            # USGS standard
 │   ├── wiki_2_0_adjusted.cpt     # Wikipedia style
 │   └── *.png                     # Color scheme preview images
+├── cache/                         # Cached topographic data files
 ├── CLAUDE.md                      # Development documentation
 ├── README.md                      # Project documentation (English)
 └── README_cn.md                   # Project documentation (Chinese)
@@ -129,7 +139,7 @@ The program generates high-quality maps containing the following elements:
 - Optional elevation colorbar legend
 
 ### Example Map
-![GeoNet Station Distribution Map](temp_style_map.png)
+![GeoNet Station Distribution Map](GeoNet_map.png)
 *GeoNet seismic network distribution map generated using the default color scheme, showing spatial distribution of seismic stations with detailed topographic background*
 
 ## Quick Start
@@ -151,9 +161,13 @@ The program generates high-quality maps containing the following elements:
    ls cpt/*.png                     # View preview images
    ```
 
-4. **Use Different Color Schemes**
+4. **Use Different Color Schemes and Formats**
    ```bash
-   python stn_plot.py --dataless BJ.dataless --cpt cpt/mars_adjusted.cpt --output mars_style.png
+   # Mars color scheme in PDF format
+   python stn_plot.py --dataless BJ.dataless --cpt cpt/mars_adjusted.cpt --output mars_style.pdf
+   
+   # High-resolution with custom title
+   python stn_plot.py --dataless BJ.dataless --resolution 01s --title "Beijing Network" --output hires.png
    ```
 
 ## Troubleshooting
@@ -161,6 +175,8 @@ The program generates high-quality maps containing the following elements:
 - **GMT Installation Issues**: Use conda to install PyGMT, which automatically installs GMT dependencies
 - **Network Connection**: First run requires downloading topographic data, ensure stable internet connection
 - **Memory Issues**: High-resolution topographic data is large, reduce resolution parameter if encountering memory problems
+- **Data Download Failures**: If topographic data cannot be downloaded, the program will exit with an error message. Check internet connection and try again
+- **Cached Data**: Downloaded data is cached in the `cache/` directory to speed up subsequent runs with the same region and resolution
 
 ## License
 

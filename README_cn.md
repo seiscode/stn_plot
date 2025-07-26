@@ -10,7 +10,9 @@
 - 精细的3D晕渲地形效果
 - 自动计算最佳地图范围或手动指定
 - 可选的台站名称标注和高程色彩条
-- 高质量PNG输出（300 DPI）
+- 多种输出格式：PNG、PDF、JPG，300 DPI分辨率
+- 智能数据缓存系统，避免重复下载
+- 完善的错误处理，数据下载失败时提供详细信息
 
 ## 环境安装
 
@@ -43,19 +45,24 @@ python stn_plot.py --dataless BJ.dataless
 # 使用默认配色生成地图
 python stn_plot.py --dataless BJ.dataless --output BJ_network_map.png
 
-# 使用自定义配色和标签
+# 使用自定义配色和标签，输出PDF格式
 python stn_plot.py --dataless BJ.dataless \
-                   --cpt cpt/wiki_2_0_adjusted.cpt \
-                   --output BJ_wiki_style.png \
+                   --cpt cpt/colombia.cpt \
+                   --output BJ_network_map.pdf \
                    --labels \
                    --colorbar \
-                   --title "Seismic Network"
+                   --title "北京地震台网"
 
 # 指定地图范围和分辨率
 python stn_plot.py --dataless BJ.dataless \
                    --region 115/118/39/42 \
                    --resolution 15s \
-                   --output custom_region.png
+                   --output BJ_custom_region.png
+
+# 高分辨率地图，不显示标题
+python stn_plot.py --dataless BJ.dataless \
+                   --resolution 01s \
+                   --output high_res_map.png
 ```
 
 ## 参数说明
@@ -65,11 +72,12 @@ python stn_plot.py --dataless BJ.dataless \
 
 ### 可选参数
 - `--output`：输出文件路径（默认：temp_style_map.png）
+  - 根据文件扩展名支持PNG、PDF、JPG格式
 - `--region`：地图范围 lon_min/lon_max/lat_min/lat_max
 - `--resolution`：地形数据分辨率（01m, 30s, 15s, 03s, 01s），默认03s
 - `--labels`：在地图上标注台站名称
-- `--title`：地图标题（默认：'Seismic Station Distribution'）
-- `--cpt`：自定义CPT配色文件路径（默认：cpt/elevation_temp_style.cpt）
+- `--title`：地图标题（无默认标题 - 仅在指定时显示）
+- `--cpt`：自定义CPT配色文件路径（默认：cpt/colombia.cpt）
 - `--colorbar`：显示右侧高程色彩条（默认不显示）
 
 ## CPT配色方案
@@ -77,8 +85,8 @@ python stn_plot.py --dataless BJ.dataless \
 项目包含多种预设配色方案，位于 `cpt/` 目录：
 
 ### 可用配色方案
-- **elevation_temp_style.cpt**: 默认绿棕配色（温和风格）
-- **light_green_plains_accurate.cpt**: 浅绿平原配色
+- **colombia.cpt**: 默认哥伦比亚风格高程配色（当前默认）
+- **elevation_temp_style.cpt**: 绿棕配色（温和风格）
 - **mars_adjusted.cpt**: 火星地形风格
 - **usgs_style.cpt**: USGS标准配色（色盲友好）
 - **wiki_2_0_adjusted.cpt**: 维基百科风格
@@ -108,11 +116,13 @@ stn_plot/
 ├── generate_cpt_previews.py        # CPT预览生成脚本
 ├── BJ.dataless                    # 示例数据文件
 ├── cpt/                           # CPT配色文件目录
-│   ├── elevation_temp_style.cpt   # 默认配色
+│   ├── colombia.cpt               # 默认配色
+│   ├── elevation_temp_style.cpt   # 备用配色
 │   ├── mars_adjusted.cpt          # 火星风格
 │   ├── usgs_style.cpt            # USGS标准
 │   ├── wiki_2_0_adjusted.cpt     # 维基百科风格
 │   └── *.png                     # 配色预览图
+├── cache/                         # 地形数据缓存目录
 ├── CLAUDE.md                      # 开发文档
 └── README.md                      # 项目说明
 ```
@@ -128,7 +138,7 @@ stn_plot/
 - 可选的高程色彩条图例
 
 ### 示例地图
-![GeoNet台站分布图](temp_style_map.png)
+![GeoNet台站分布图](GeoNet_map.png)
 *使用默认配色方案生成的GeoNet地震台网分布图，展示了地震台站的空间分布和精细的地形背景*
 
 ## 快速开始
@@ -150,9 +160,13 @@ stn_plot/
    ls cpt/*.png                     # 查看预览图
    ```
 
-4. **使用不同配色**
+4. **使用不同配色和格式**
    ```bash
-   python stn_plot.py --dataless BJ.dataless --cpt cpt/mars_adjusted.cpt --output mars_style.png
+   # 火星风格配色，PDF格式
+   python stn_plot.py --dataless BJ.dataless --cpt cpt/mars_adjusted.cpt --output mars_style.pdf
+   
+   # 高分辨率图，自定义中文标题
+   python stn_plot.py --dataless BJ.dataless --resolution 01s --title "北京台网" --output hires.png
    ```
 
 ## 故障排除
@@ -160,3 +174,13 @@ stn_plot/
 - **GMT安装问题**: 确保使用conda安装PyGMT，它会自动安装GMT依赖
 - **网络连接**: 首次运行需要下载地形数据，请确保网络连接正常
 - **内存不足**: 高分辨率地形数据较大，如遇内存问题可降低resolution参数
+- **数据下载失败**: 如果地形数据无法下载，程序会退出并显示错误信息。请检查网络连接后重试
+- **数据缓存**: 下载的数据会缓存在 `cache/` 目录中，相同区域和分辨率的后续运行会更快
+
+## 许可证
+
+本项目为开源项目。各CPT文件的许可证请参考其各自的许可证信息。
+
+## 贡献
+
+欢迎贡献！请随时提交问题和拉取请求。
