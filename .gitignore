@@ -1,6 +1,7 @@
 # Exclude specified files and directories
 产品需求文档 (PRD) - 地震台站分布图绘制工具.md
 BJ.dataless
+CLAUDE.md
 cpt-city/
 
 # Python cache and temporary files
