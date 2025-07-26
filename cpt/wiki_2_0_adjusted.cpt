@@ -1,0 +1,49 @@
+# wiki-2.0.cpt - Adjusted for 3000m maximum elevation
+# Based on Maps_template-fr.svg by Eric Gaba (Wikimedia Commons user: Sting)
+# Released under GNU Free Documentation License, Version 1.2
+# Adjusted elevation range from -100m to 3000m for Earth topography
+# COLOR_MODEL = RGB
+
+# Water depths and sea level
+-100    113 171 216  -80     113 171 216
+-80     121 178 222  -60     121 178 222
+-60     132 185 227  -40     132 185 227
+-40     141 193 234  -25     141 193 234
+-25     150 201 240  -20     161 210 247
+
+# Very low elevation areas - Darker but still lighter than 100m+
+-20     210 235 210  -10     205 230 205
+-10     200 225 200  0       195 220 195
+0       190 215 190  25      185 210 185
+25      180 205 180  50      175 200 175
+50      175 198 175  75      173 195 173
+75      175 210 175  100     178 212 178
+
+# Low elevation plains - Regular green tones (darker than -20m to 100m)  
+100     172 208 165  150     172 208 165
+150     148 191 139  250     148 191 139
+250     168 198 143  350     168 198 143
+350     189 204 150  450     189 204 150
+450     209 215 171  550     209 215 171
+550     225 228 181  650     225 228 181
+650     239 235 192  750     239 235 192
+
+# Medium elevation hills - Yellow-brown transition
+750     232 225 182  850     232 225 182
+850     222 214 163  950     222 214 163
+950     211 202 157  1050    211 202 157
+1050    202 185 130  1200    202 185 130
+1200    195 167 107  1350    195 167 107
+1350    185 152  90  1500    185 152  90
+1500    170 135  83  1650    170 135  83
+
+# Higher elevation mountains - Gray-brown to white
+1650    172 154 124  1800    172 154 124
+1800    186 174 154  2000    186 174 154
+2000    202 195 184  2200    202 195 184
+2200    224 222 216  2600    224 222 216
+2600    245 244 242  3000    245 244 242
+
+B   0   0   0
+F 255 255 255
+N 255   0   0

@@ -1,0 +1,40 @@
+# Exclude specified files and directories
+产品需求文档 (PRD) - 地震台站分布图绘制工具.md
+BJ.dataless
+cpt-city/
+
+# Python cache and temporary files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+.mypy_cache/
+
+# GMT temporary files
+*.cpt
+!cpt/*.cpt
+gmt.conf
+gmt.history
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Output images (keep sample)
+*.png
+!temp_style_map.png
+
+# Environment files
+.env
+.venv
+env/
+venv/

@@ -1,0 +1,11 @@
+name: stn_plot
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.12
+  - obspy>=1.4.0
+  - pygmt>=0.10.0
+  - numpy>=1.20.0
+  - gmt>=6.4.0
+  - ghostscript>=9.50
