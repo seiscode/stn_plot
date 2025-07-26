@@ -36,31 +36,31 @@ pip install -r requirements.txt
 ### 基本用法
 
 ```bash
-python stn_plot.py --dataless BJ.dataless
+python stn_plot.py --dataless stn.dataless
 ```
 
 ### 完整用法示例
 
 ```bash
 # 使用默认配色生成地图
-python stn_plot.py --dataless BJ.dataless --output BJ_network_map.png
+python stn_plot.py --dataless stn.dataless --output network_map.png
 
 # 使用自定义配色和标签，输出PDF格式
-python stn_plot.py --dataless BJ.dataless \
+python stn_plot.py --dataless stn.dataless \
                    --cpt cpt/colombia.cpt \
-                   --output BJ_network_map.pdf \
+                   --output network_map.pdf \
                    --labels \
                    --colorbar \
-                   --title "北京地震台网"
+                   --title "Seismic Network"
 
 # 指定地图范围和分辨率
-python stn_plot.py --dataless BJ.dataless \
+python stn_plot.py --dataless stn.dataless \
                    --region 115/118/39/42 \
                    --resolution 15s \
-                   --output BJ_custom_region.png
+                   --output custom_region.png
 
 # 高分辨率地图，不显示标题
-python stn_plot.py --dataless BJ.dataless \
+python stn_plot.py --dataless stn.dataless \
                    --resolution 01s \
                    --output high_res_map.png
 ```
@@ -114,7 +114,7 @@ python generate_cpt_previews.py
 stn_plot/
 ├── stn_plot.py                    # 主程序脚本
 ├── generate_cpt_previews.py        # CPT预览生成脚本
-├── BJ.dataless                    # 示例数据文件
+├── stn.dataless                    # 示例数据文件
 ├── cpt/                           # CPT配色文件目录
 │   ├── colombia.cpt               # 默认配色
 │   ├── elevation_temp_style.cpt   # 备用配色
@@ -151,7 +151,7 @@ stn_plot/
 
 2. **生成第一张地图**
    ```bash
-   python stn_plot.py --dataless BJ.dataless --output my_first_map.png
+   python stn_plot.py --dataless stn.dataless --output my_first_map.png
    ```
 
 3. **查看配色选项**
@@ -163,10 +163,10 @@ stn_plot/
 4. **使用不同配色和格式**
    ```bash
    # 火星风格配色，PDF格式
-   python stn_plot.py --dataless BJ.dataless --cpt cpt/mars_adjusted.cpt --output mars_style.pdf
+   python stn_plot.py --dataless stn.dataless --cpt cpt/mars_adjusted.cpt --output mars_style.pdf
    
    # 高分辨率图，自定义中文标题
-   python stn_plot.py --dataless BJ.dataless --resolution 01s --title "北京台网" --output hires.png
+   python stn_plot.py --dataless stn.dataless --resolution 01s --title "Seismic Network" --output hires.png
    ```
 
 ## 故障排除

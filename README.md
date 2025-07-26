@@ -6,7 +6,7 @@ A Python command-line tool for generating high-quality seismic station distribut
 
 - Automatic parsing of Dataless SEED files to extract station metadata
 - Support for multiple resolutions of global topographic data (01m, 30s, 15s, 03s, 01s)
-- Rich CPT color palette system with 10+ preset color schemes
+- Rich CPT color palette system with 9 preset color schemes
 - Fine 3D shaded relief terrain effects
 - Automatic optimal map bounds calculation or manual specification
 - Optional station name labels and elevation colorbar
@@ -36,31 +36,31 @@ pip install -r requirements.txt
 ### Basic Usage
 
 ```bash
-python stn_plot.py --dataless BJ.dataless
+python stn_plot.py --dataless stn.dataless
 ```
 
 ### Advanced Usage Examples
 
 ```bash
 # Generate map with default color scheme
-python stn_plot.py --dataless BJ.dataless --output BJ_network_map.png
+python stn_plot.py --dataless stn.dataless --output network_map.png
 
 # Use custom color scheme with labels and PDF output
-python stn_plot.py --dataless BJ.dataless \
+python stn_plot.py --dataless stn.dataless \
                    --cpt cpt/colombia.cpt \
-                   --output BJ_network_map.pdf \
+                   --output network_map.pdf \
                    --labels \
                    --colorbar \
                    --title "Seismic Network"
 
 # Specify map region and resolution
-python stn_plot.py --dataless BJ.dataless \
+python stn_plot.py --dataless stn.dataless \
                    --region 115/118/39/42 \
                    --resolution 15s \
-                   --output BJ_custom_region.png
+                   --output custom_region.png
 
 # High-resolution map without title
-python stn_plot.py --dataless BJ.dataless \
+python stn_plot.py --dataless stn.dataless \
                    --resolution 01s \
                    --output high_res_map.png
 ```
@@ -114,7 +114,7 @@ This creates corresponding `.png` preview images for each `.cpt` file in the `cp
 stn_plot/
 ├── stn_plot.py                    # Main program script
 ├── generate_cpt_previews.py        # CPT preview generation script
-├── BJ.dataless                    # Sample data file
+├── stn.dataless                    # Sample data file
 ├── cpt/                           # CPT color palette files directory
 │   ├── colombia.cpt               # Default color scheme
 │   ├── elevation_temp_style.cpt   # Alternative color scheme
@@ -152,7 +152,7 @@ The program generates high-quality maps containing the following elements:
 
 2. **Generate Your First Map**
    ```bash
-   python stn_plot.py --dataless BJ.dataless --output my_first_map.png
+   python stn_plot.py --dataless stn.dataless --output my_first_map.png
    ```
 
 3. **Explore Color Options**
@@ -164,10 +164,10 @@ The program generates high-quality maps containing the following elements:
 4. **Use Different Color Schemes and Formats**
    ```bash
    # Mars color scheme in PDF format
-   python stn_plot.py --dataless BJ.dataless --cpt cpt/mars_adjusted.cpt --output mars_style.pdf
+   python stn_plot.py --dataless stn.dataless --cpt cpt/mars_adjusted.cpt --output mars_style.pdf
    
    # High-resolution with custom title
-   python stn_plot.py --dataless BJ.dataless --resolution 01s --title "Beijing Network" --output hires.png
+   python stn_plot.py --dataless stn.dataless --resolution 01s --title "Seismic Network" --output hires.png
    ```
 
 ## Troubleshooting
