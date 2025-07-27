@@ -10,6 +10,7 @@ This project is developed by [the Seismic Data Processing Group](#About_the_Seis
 - Fine 3D shaded relief terrain effects
 - Automatic optimal map bounds calculation or manual specification
 - Optional station name labels and elevation colorbar
+- **Inset map functionality** to show main map location in broader geographical context
 - Multiple output formats: PNG, PDF, JPG with 300 DPI resolution
 - Intelligent data caching system to avoid repeated downloads
 - Error handling with informative messages for data download failures
@@ -63,6 +64,19 @@ python stn_plot.py --dataless stn.dataless \
 python stn_plot.py --dataless stn.dataless \
                    --resolution 01s \
                    --output high_res_map.png
+
+# Generate map with inset showing broader geographical context
+python stn_plot.py --dataless stn.dataless \
+                   --output map_with_inset.png \
+                   --inset \
+                   --inset-region "110/125/35/45"
+
+# Inset map positioned in top-left corner
+python stn_plot.py --dataless stn.dataless \
+                   --output map_inset_topleft.png \
+                   --inset \
+                   --inset-region "110/125/35/45" \
+                   --inset-position "jTL+o0.5c"
 ```
 
 ## Parameters
@@ -79,6 +93,13 @@ python stn_plot.py --dataless stn.dataless \
 - `--title`: Map title (no default title - only shows when specified)
 - `--cpt`: Custom CPT color palette file path (default: cpt/colombia.cpt)
 - `--colorbar`: Show elevation colorbar on right side (default: not shown)
+
+### Inset Map Parameters
+- `--inset`: Enable inset map functionality
+- `--inset-region`: Inset map region lon_min/lon_max/lat_min/lat_max (e.g., "110/125/35/45")
+- `--inset-position`: Inset position (default: "jBR+o0.1c" - bottom right corner)
+  - Available positions: jTL (top-left), jTR (top-right), jBL (bottom-left), jBR (bottom-right)
+  - Offset can be adjusted with +o (e.g., "+o0.5c" for 0.5cm offset)
 
 ## CPT Color Schemes
 
@@ -100,6 +121,42 @@ python generate_cpt_previews.py
 ```
 
 This creates corresponding `.png` preview images for each `.cpt` file in the `cpt/` directory.
+
+## Inset Map Functionality
+
+The inset map feature provides geographical context by showing the main map's location within a broader region. This is particularly useful for regional seismic networks to show their position relative to larger geographical features.
+
+### Features
+- **Geographical Context**: Shows main map location in a larger area
+- **Harmonized Colors**: Automatically matches the main map's color scheme
+- **Flexible Positioning**: Configurable position (corners) and offset
+- **Smart Visualization**: Highlights main map area with red rectangle
+- **Station Display**: Shows stations as small dots when count ≤10
+
+### Usage Examples
+
+```bash
+# Basic inset map in bottom-right corner
+python stn_plot.py --dataless data.xml --inset --inset-region "110/125/35/45"
+
+# Position inset in top-left with larger offset
+python stn_plot.py --dataless data.xml --inset --inset-region "110/125/35/45" --inset-position "jTL+o0.5c"
+
+# Combine with high resolution and custom colors
+python stn_plot.py --dataless data.xml --resolution 01s --cpt cpt/wiki_2_0_adjusted.cpt \
+                   --inset --inset-region "110/125/35/45" --output map_with_context.pdf
+```
+
+### Position Options
+- `jTL+o0.1c`: Top-left corner with 0.1cm offset
+- `jTR+o0.1c`: Top-right corner with 0.1cm offset  
+- `jBL+o0.1c`: Bottom-left corner with 0.1cm offset
+- `jBR+o0.1c`: Bottom-right corner with 0.1cm offset (default)
+
+### Technical Notes
+- **PyGMT Limitation**: Inset maps do not support latitude/longitude annotations due to PyGMT/GMT constraints
+- **Color Harmony**: Inset automatically uses colors compatible with the main map's CPT scheme
+- **Performance**: Uses low-resolution geographical data for fast rendering
 
 ## System Requirements
 
@@ -137,6 +194,7 @@ The program generates high-quality maps containing the following elements:
 - Coastlines and water bodies (light blue)
 - Geographic grid and annotations
 - Optional elevation colorbar legend
+- Optional inset map showing the main map's location in broader geographical context
 
 ### Example Map
 ![GeoNet Station Distribution Map](GeoNet_map.png)

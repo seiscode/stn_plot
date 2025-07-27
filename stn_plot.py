@@ -144,7 +144,68 @@ class TempStylePlotter:
         
         return work_cpt
     
-    def create_temp_map(self, output_path, resolution="03s", add_labels=False, title="地震台站分布图", cpt_file=None, show_colorbar=False, draw_coast=True):
+    def add_inset_map(self, fig, inset_region, inset_position="jBR+o0.1c"):
+        """添加插图矩形区域显示主地图在更大区域中的位置"""
+        try:
+            # 解析插图区域
+            if isinstance(inset_region, str):
+                parts = inset_region.split('/')
+                if len(parts) != 4:
+                    raise ValueError("插图区域格式错误，应为: lon_min/lon_max/lat_min/lat_max")
+                inset_bounds = [float(p) for p in parts]
+            else:
+                inset_bounds = list(inset_region)
+            
+            # 创建插图
+            with fig.inset(
+                position=inset_position,  # 位置：右下角，偏移0.1cm
+                box="+gwhite+p1p",       # 白色背景，1p边框
+                region=inset_bounds,      # 插图显示区域
+                projection="M4c",         # 4cm宽的墨卡托投影（缩小三分之一：6*2/3=4）
+            ):
+                # 绘制插图地形背景（简化版）
+                # 注意：PyGMT的inset功能不支持经纬度标注显示
+                try:
+                    # 使用较低分辨率的地形数据
+                    fig.coast(
+                        land="175/200/175",      # 陆地中等绿色，与主图CPT配色和谐
+                        water="141/193/234",     # 水体蓝色，匹配主图CPT的水体色
+                        shorelines="0.5p,black", # 细海岸线
+                        borders="1/0.5p,gray",   # 国界线
+                        resolution="l"           # 低分辨率，快速渲染
+                    )
+                except:
+                    # 如果coast失败，继续
+                    pass
+                
+                # 在插图中绘制主地图区域的矩形
+                rectangle_data = [[self.region[0], self.region[2], self.region[1], self.region[3]]]
+                fig.plot(
+                    data=rectangle_data, 
+                    style="r+s",        # 矩形样式，+s表示使用坐标对
+                    pen="2p,red",       # 2点宽红色边框
+                    fill="red@50"       # 50%透明度的红色填充
+                )
+                
+                # 在插图中标注台站（可选，如果台站较少）
+                if len(self.stations) <= 10:  # 只在台站数量较少时显示
+                    lons = [s['longitude'] for s in self.stations]
+                    lats = [s['latitude'] for s in self.stations]
+                    fig.plot(
+                        x=lons,
+                        y=lats,
+                        style="c0.15c",     # 小圆点
+                        fill="red",         # 红色
+                        pen="0.5p,darkred"  # 深红色边框
+                    )
+            
+            print("插图矩形区域添加完成")
+            
+        except Exception as e:
+            print(f"添加插图时发生错误: {e}")
+            print("继续生成主地图...")
+    
+    def create_temp_map(self, output_path, resolution="03s", add_labels=False, title="地震台站分布图", cpt_file=None, show_colorbar=False, draw_coast=True, add_inset=False, inset_region=None, inset_position="jBR+o0.1c"):
         """创建基于temp_map.png配色的地震台站分布图"""
         if not self.stations:
             raise ValueError("无台站数据")
@@ -439,6 +500,11 @@ class TempStylePlotter:
                 else:
                     print("跳过高程图例显示")
             
+            # 添加插图矩形区域（可选）
+            if add_inset and inset_region:
+                print("添加插图矩形区域...")
+                self.add_inset_map(fig, inset_region, inset_position)
+            
             # 不添加指北针和比例尺，保持简洁
             # print("添加比例尺和指北针...")
             # 注释掉指北针和比例尺
@@ -501,6 +567,8 @@ def main():
   python stn_plot.py --dataless BJ.dataless --output temp_style_map.png --resolution 03s --labels --title "北京地震台网分布图"
   python stn_plot.py --dataless BJ.dataless --cpt custom_colors.cpt --output custom_map.png
   python stn_plot.py --dataless BJ.dataless --output station_map.pdf --labels --title "Seismic Station Distribution"
+  python stn_plot.py --dataless BJ.dataless --output map_with_inset.png --inset --inset-region "110/125/35/45"
+  python stn_plot.py --dataless BJ.dataless --output map_inset_topleft.png --inset --inset-region "110/125/35/45" --inset-position "jTL+o0.1c"
         """
     )
     
@@ -515,6 +583,9 @@ def main():
     parser.add_argument('--padding', type=float, help='地图边界padding (度)，不指定时自动计算')
     parser.add_argument('--min-range', type=float, default=2.0, help='地图最小范围 (度)，确保显示足够的经纬度标记，默认2.0度')
     parser.add_argument('--no-coast', action='store_true', help='不绘制海岸线和边界线')
+    parser.add_argument('--inset', action='store_true', help='添加插图矩形区域显示主地图在更大区域中的位置')
+    parser.add_argument('--inset-region', help='插图显示区域 lon_min/lon_max/lat_min/lat_max (例: 110/125/35/45)')
+    parser.add_argument('--inset-position', default='jBR+o0.1c', help='插图位置 (默认: jBR+o0.1c 右下角偏移0.1cm)')
     
     args = parser.parse_args()
     
@@ -544,7 +615,10 @@ def main():
             title=args.title,
             cpt_file=args.cpt,
             show_colorbar=args.colorbar,
-            draw_coast=not args.no_coast
+            draw_coast=not args.no_coast,
+            add_inset=getattr(args, 'inset', False),
+            inset_region=getattr(args, 'inset_region', None),
+            inset_position=getattr(args, 'inset_position', 'jBR+o0.1c')
         )
     except Exception as e:
         print(f"生成地图失败: {e}")

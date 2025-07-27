@@ -10,6 +10,7 @@
 - 精细的3D晕渲地形效果
 - 自动计算最佳地图范围或手动指定
 - 可选的台站名称标注和高程色彩条
+- **插图功能**：显示主地图在更大地理区域中的位置
 - 多种输出格式：PNG、PDF、JPG，300 DPI分辨率
 - 智能数据缓存系统，避免重复下载
 - 完善的错误处理，数据下载失败时提供详细信息
@@ -63,6 +64,19 @@ python stn_plot.py --dataless stn.dataless \
 python stn_plot.py --dataless stn.dataless \
                    --resolution 01s \
                    --output high_res_map.png
+
+# 生成带有插图的地图，显示更大地理背景
+python stn_plot.py --dataless stn.dataless \
+                   --output map_with_inset.png \
+                   --inset \
+                   --inset-region "110/125/35/45"
+
+# 将插图放置在左上角
+python stn_plot.py --dataless stn.dataless \
+                   --output map_inset_topleft.png \
+                   --inset \
+                   --inset-region "110/125/35/45" \
+                   --inset-position "jTL+o0.5c"
 ```
 
 ## 参数说明
@@ -79,6 +93,13 @@ python stn_plot.py --dataless stn.dataless \
 - `--title`：地图标题（无默认标题 - 仅在指定时显示）
 - `--cpt`：自定义CPT配色文件路径（默认：cpt/colombia.cpt）
 - `--colorbar`：显示右侧高程色彩条（默认不显示）
+
+### 插图参数
+- `--inset`：启用插图功能
+- `--inset-region`：插图区域范围 lon_min/lon_max/lat_min/lat_max（例如："110/125/35/45"）
+- `--inset-position`：插图位置（默认："jBR+o0.1c" - 右下角）
+  - 可用位置：jTL（左上）、jTR（右上）、jBL（左下）、jBR（右下）
+  - 偏移调整：+o（例如："+o0.5c"表示0.5厘米偏移）
 
 ## CPT配色方案
 
@@ -100,6 +121,42 @@ python generate_cpt_previews.py
 ```
 
 这将在 `cpt/` 目录下为每个 `.cpt` 文件生成对应的 `.png` 预览图。
+
+## 插图功能
+
+插图功能通过在更大的地理区域内显示主地图的位置来提供地理背景信息。这对于区域地震台网展示其相对于大型地理特征的位置特别有用。
+
+### 功能特点
+- **地理背景**：在更大区域内显示主地图位置
+- **色彩和谐**：自动匹配主地图的配色方案
+- **灵活定位**：可配置位置（四个角落）和偏移
+- **智能显示**：用红色矩形高亮主地图区域
+- **台站标注**：当台站数量≤10个时在插图中显示台站点
+
+### 使用示例
+
+```bash
+# 基本插图，位于右下角
+python stn_plot.py --dataless data.xml --inset --inset-region "110/125/35/45"
+
+# 将插图放置在左上角，增大偏移
+python stn_plot.py --dataless data.xml --inset --inset-region "110/125/35/45" --inset-position "jTL+o0.5c"
+
+# 结合高分辨率和自定义配色
+python stn_plot.py --dataless data.xml --resolution 01s --cpt cpt/wiki_2_0_adjusted.cpt \
+                   --inset --inset-region "110/125/35/45" --output map_with_context.pdf
+```
+
+### 位置选项
+- `jTL+o0.1c`：左上角，0.1厘米偏移
+- `jTR+o0.1c`：右上角，0.1厘米偏移
+- `jBL+o0.1c`：左下角，0.1厘米偏移
+- `jBR+o0.1c`：右下角，0.1厘米偏移（默认）
+
+### 技术说明
+- **PyGMT限制**：由于PyGMT/GMT约束，插图不支持经纬度标注显示
+- **色彩协调**：插图自动使用与主地图CPT方案兼容的颜色
+- **性能优化**：使用低分辨率地理数据实现快速渲染
 
 ## 系统要求
 
@@ -136,6 +193,7 @@ stn_plot/
 - 海岸线和水体（浅蓝色）
 - 经纬网格和标注
 - 可选的高程色彩条图例
+- 可选的插图显示主地图在更大地理背景中的位置
 
 ### 示例地图
 ![GeoNet台站分布图](GeoNet_map.png)
@@ -165,8 +223,11 @@ stn_plot/
    # 火星风格配色，PDF格式
    python stn_plot.py --dataless stn.dataless --cpt cpt/mars_adjusted.cpt --output mars_style.pdf
    
-   # 高分辨率图，自定义中文标题
-   python stn_plot.py --dataless stn.dataless --resolution 01s --title "Seismic Network" --output hires.png
+   # 高分辨率图，自定义标题
+   python stn_plot.py --dataless stn.dataless --resolution 01s --title "地震台网分布" --output hires.png
+   
+   # 带插图的地图，显示地理背景
+   python stn_plot.py --dataless stn.dataless --inset --inset-region "110/125/35/45" --output map_with_inset.png
    ```
 
 ## 故障排除
