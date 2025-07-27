@@ -1,6 +1,6 @@
 # Seismic Station Distribution Mapping Tool
 
-A Python command-line tool for generating high-quality seismic station distribution maps from Dataless SEED and stationXML files, with support for multiple color schemes and customizable terrain rendering.
+This project is developed by [the Seismic Data Processing Group](#About_the_Seismic_Data_Processing_Group).A Python command-line tool for generating high-quality seismic station distribution maps from Dataless SEED and stationXML files, with support for multiple color schemes and customizable terrain rendering.
 
 ## Features
 
@@ -177,6 +177,19 @@ The program generates high-quality maps containing the following elements:
 - **Memory Issues**: High-resolution topographic data is large, reduce resolution parameter if encountering memory problems
 - **Data Download Failures**: If topographic data cannot be downloaded, the program will exit with an error message. Check internet connection and try again
 - **Cached Data**: Downloaded data is cached in the `cache/` directory to speed up subsequent runs with the same region and resolution
+
+## About_the_Seismic_Data_Processing_Group
+
+Our group focuses on cutting-edge research and software development in the field of seismology. The team is led by Lin Xiangdong, with core members including Mu Leiyu, Yang Xuan, and Wu Peng.
+
+Our key objectives include:
+
+- Algorithm Development: Building on the theoretical foundations of the book Seismic Data Processing Techniques¹, we are dedicated to developing advanced seismological algorithms. These algorithms serve as both extensions and supplements to the classic methods in the book, while also incorporating our team's innovative approaches to enhance the precision and efficiency of data processing.
+- Open-Source Contributions: Providing stable and efficient open-source programs for seismic data processing to serve the scientific community.
+- Data Research: Conducting analysis of real-world seismic data and publishing our findings in academic papers.
+
+We are committed to bridging the gap between theoretical research and practical application to drive progress in the field of seismology.
+
 
 ## License
 
