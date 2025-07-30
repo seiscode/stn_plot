@@ -1,6 +1,6 @@
 # Seismic Station Distribution Mapping Tool
 
-This project is developed by [the Seismic Data Processing Group](#About_the_Seismic_Data_Processing_Group).A Python command-line tool for generating high-quality seismic station distribution maps from Dataless SEED and stationXML files, with support for multiple color schemes and customizable terrain rendering.
+Developed by the [Seismic Data Processing Group](https://github.com/seiscode/stn_plot/README.md#About_the_Seismic_Data_Processing_Group), this is a Python-based tool for plotting seismic station distribution maps, featuring support for multiple color schemes and custom terrain rendering. The tool is built upon the [PyGMT](https://github.com/GenericMappingTools/pygmt) library and supports both dataless and StationXML file formats.
 
 ## Features
 
