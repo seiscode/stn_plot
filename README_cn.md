@@ -1,6 +1,6 @@
 # 地震台站分布图绘制工具 (Station Plot Tool)
 
-本项目由[地震数据处理小组](#地震数据处理小组简介)研发。基于Dataless SEED文件生成高质量的地震台站分布图，支持多种配色方案和自定义地形渲染。
+本项目由[地震数据处理小组](https://github.com/seiscode/cp_ppsd/blob/main/README_CN.md#地震数据处理小组简介)研发，是一个基于Python的地震台站分布图绘制工具，支持多种配色方案和自定义地形渲染。该工具基于[PyGMT](https://github.com/GenericMappingTools/pygmt)库实现，支持dataless和StationXML格式文件。
 
 ## 功能特点
 
@@ -10,6 +10,7 @@
 - 精细的3D晕渲地形效果
 - 自动计算最佳地图范围或手动指定
 - 可选的台站名称标注和高程色彩条
+- **中国断层数据叠加功能**：使用来自[GMT中国地理空间数据](https://github.com/gmt-china/china-geospatial-data)的CN-faults.gmt数据
 - **插图功能**：显示主地图在更大地理区域中的位置
 - 多种输出格式：PNG、PDF、JPG，300 DPI分辨率
 - 智能数据缓存系统，避免重复下载
@@ -54,6 +55,12 @@ python stn_plot.py --dataless stn.dataless \
                    --colorbar \
                    --title "Seismic Network"
 
+# 生成叠加中国断层数据的地图
+python stn_plot.py --dataless stn.dataless \
+                   --output map_with_faults.png \
+                   --faults \
+                   --cpt cpt/wiki_2_0_adjusted.cpt
+
 # 指定地图范围和分辨率
 python stn_plot.py --dataless stn.dataless \
                    --region 115/118/39/42 \
@@ -64,6 +71,12 @@ python stn_plot.py --dataless stn.dataless \
 python stn_plot.py --dataless stn.dataless \
                    --resolution 01s \
                    --output high_res_map.png
+
+# 使用自定义断层数据文件
+python stn_plot.py --dataless stn.dataless \
+                   --faults \
+                   --faults-file custom_faults.gmt \
+                   --output custom_faults_map.png
 
 # 生成带有插图的地图，显示更大地理背景
 python stn_plot.py --dataless stn.dataless \
@@ -93,6 +106,8 @@ python stn_plot.py --dataless stn.dataless \
 - `--title`：地图标题（无默认标题 - 仅在指定时显示）
 - `--cpt`：自定义CPT配色文件路径（默认：cpt/colombia.cpt）
 - `--colorbar`：显示右侧高程色彩条（默认不显示）
+- `--faults`：启用中国断层数据叠加功能，使用CN-faults.gmt数据
+- `--faults-file`：自定义断层数据文件路径（默认：china-geospatial-data/CN-faults.gmt）
 
 ### 插图参数
 - `--inset`：启用插图功能
@@ -158,6 +173,16 @@ python stn_plot.py --dataless data.xml --resolution 01s --cpt cpt/wiki_2_0_adjus
 - **色彩协调**：插图自动使用与主地图CPT方案兼容的颜色
 - **性能优化**：使用低分辨率地理数据实现快速渲染
 
+## 数据来源
+
+### 中国断层数据
+断层叠加功能使用的CN-faults.gmt数据来自[GMT中国地理空间数据](https://github.com/gmt-china/china-geospatial-data)项目。该数据集包含中国活断层数据，基于中国地震局地质研究所发布的中国活断层数据库2023版（CAFDv2023）。
+
+- **项目仓库**：[https://github.com/gmt-china/china-geospatial-data](https://github.com/gmt-china/china-geospatial-data)
+- **数据来源**：中国活断层数据库2023版（CAFDv2023）
+- **维护单位**：GMT中文社区
+- **数据文件**：`china-geospatial-data/CN-faults.gmt`
+
 ## 系统要求
 
 - Python 3.12+ (推荐)
@@ -179,6 +204,8 @@ stn_plot/
 │   ├── usgs_style.cpt            # USGS标准
 │   ├── wiki_2_0_adjusted.cpt     # 维基百科风格
 │   └── *.png                     # 配色预览图
+├── china-geospatial-data/         # 中国地理空间数据目录
+│   └── CN-faults.gmt             # 中国断层数据（来自GMT中国社区）
 ├── cache/                         # 地形数据缓存目录
 ├── CLAUDE.md                      # 开发文档
 └── README.md                      # 项目说明
@@ -194,6 +221,7 @@ stn_plot/
 - 经纬网格和标注
 - 可选的高程色彩条图例
 - 可选的插图显示主地图在更大地理背景中的位置
+- **中国断层数据叠加**（可选启用）
 
 ### 示例地图
 ![GeoNet台站分布图](GeoNet_map.png)
@@ -225,6 +253,9 @@ stn_plot/
    
    # 高分辨率图，自定义标题
    python stn_plot.py --dataless stn.dataless --resolution 01s --title "地震台网分布" --output hires.png
+   
+   # 叠加中国断层数据的地图
+   python stn_plot.py --dataless stn.dataless --faults --cpt cpt/wiki_2_0_adjusted.cpt --output map_with_faults.png
    
    # 带插图的地图，显示地理背景
    python stn_plot.py --dataless stn.dataless --inset --inset-region "110/125/35/45" --output map_with_inset.png

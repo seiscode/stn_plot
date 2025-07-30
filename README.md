@@ -1,6 +1,6 @@
 # Seismic Station Distribution Mapping Tool
 
-This project is developed by [the Seismic Data Processing Group](#About_the_Seismic_Data_Processing_Group).A Python command-line tool for generating high-quality seismic station distribution maps from Dataless SEED and stationXML files, with support for multiple color schemes and customizable terrain rendering.
+Developed by the [Seismic Data Processing Group](https://github.com/seiscode/stn_plot/blob/main/README.md#About_the_Seismic_Data_Processing_Group), this is a Python-based tool for plotting seismic station distribution maps, featuring support for multiple color schemes and custom terrain rendering. The tool is built upon the [PyGMT](https://github.com/GenericMappingTools/pygmt) library and supports both dataless and StationXML file formats.
 
 ## Features
 
@@ -10,6 +10,7 @@ This project is developed by [the Seismic Data Processing Group](#About_the_Seis
 - Fine 3D shaded relief terrain effects
 - Automatic optimal map bounds calculation or manual specification
 - Optional station name labels and elevation colorbar
+- **China fault data overlay** using CN-faults.gmt from [GMT China Geospatial Data](https://github.com/gmt-china/china-geospatial-data)
 - **Inset map functionality** to show main map location in broader geographical context
 - Multiple output formats: PNG, PDF, JPG with 300 DPI resolution
 - Intelligent data caching system to avoid repeated downloads
@@ -54,6 +55,12 @@ python stn_plot.py --dataless stn.dataless \
                    --colorbar \
                    --title "Seismic Network"
 
+# Generate map with China fault data overlay
+python stn_plot.py --dataless stn.dataless \
+                   --output map_with_faults.png \
+                   --faults \
+                   --cpt cpt/wiki_2_0_adjusted.cpt
+
 # Specify map region and resolution
 python stn_plot.py --dataless stn.dataless \
                    --region 115/118/39/42 \
@@ -64,6 +71,12 @@ python stn_plot.py --dataless stn.dataless \
 python stn_plot.py --dataless stn.dataless \
                    --resolution 01s \
                    --output high_res_map.png
+
+# Combine fault overlay with custom fault data file
+python stn_plot.py --dataless stn.dataless \
+                   --faults \
+                   --faults-file custom_faults.gmt \
+                   --output custom_faults_map.png
 
 # Generate map with inset showing broader geographical context
 python stn_plot.py --dataless stn.dataless \
@@ -93,6 +106,8 @@ python stn_plot.py --dataless stn.dataless \
 - `--title`: Map title (no default title - only shows when specified)
 - `--cpt`: Custom CPT color palette file path (default: cpt/colombia.cpt)
 - `--colorbar`: Show elevation colorbar on right side (default: not shown)
+- `--faults`: Enable China fault data overlay using CN-faults.gmt
+- `--faults-file`: Custom fault data file path (default: china-geospatial-data/CN-faults.gmt)
 
 ### Inset Map Parameters
 - `--inset`: Enable inset map functionality
@@ -158,6 +173,16 @@ python stn_plot.py --dataless data.xml --resolution 01s --cpt cpt/wiki_2_0_adjus
 - **Color Harmony**: Inset automatically uses colors compatible with the main map's CPT scheme
 - **Performance**: Uses low-resolution geographical data for fast rendering
 
+## Data Sources
+
+### China Fault Data
+The fault overlay functionality uses CN-faults.gmt from the [GMT China Geospatial Data](https://github.com/gmt-china/china-geospatial-data) project. This dataset contains active fault data in China, based on the China Active Fault Database 2023 (CAFDv2023) released by the Institute of Geology, China Earthquake Administration.
+
+- **Repository**: [https://github.com/gmt-china/china-geospatial-data](https://github.com/gmt-china/china-geospatial-data)
+- **Data Source**: China Active Fault Database 2023 (CAFDv2023)
+- **Maintained by**: GMT China Community
+- **File**: `china-geospatial-data/CN-faults.gmt`
+
 ## System Requirements
 
 - Python 3.12+ (recommended)
@@ -179,6 +204,8 @@ stn_plot/
 │   ├── usgs_style.cpt            # USGS standard
 │   ├── wiki_2_0_adjusted.cpt     # Wikipedia style
 │   └── *.png                     # Color scheme preview images
+├── china-geospatial-data/         # China geospatial datasets directory
+│   └── CN-faults.gmt             # China fault data (from GMT China)
 ├── cache/                         # Cached topographic data files
 ├── CLAUDE.md                      # Development documentation
 ├── README.md                      # Project documentation (English)
@@ -195,6 +222,7 @@ The program generates high-quality maps containing the following elements:
 - Geographic grid and annotations
 - Optional elevation colorbar legend
 - Optional inset map showing the main map's location in broader geographical context
+- **China fault data overlay** (if enabled)
 
 ### Example Map
 ![GeoNet Station Distribution Map](GeoNet_map.png)
@@ -226,6 +254,9 @@ The program generates high-quality maps containing the following elements:
    
    # High-resolution with custom title
    python stn_plot.py --dataless stn.dataless --resolution 01s --title "Seismic Network" --output hires.png
+   
+   # Map with China fault data overlay
+   python stn_plot.py --dataless stn.dataless --faults --cpt cpt/wiki_2_0_adjusted.cpt --output map_with_faults.png
    ```
 
 ## Troubleshooting

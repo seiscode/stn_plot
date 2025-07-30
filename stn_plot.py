@@ -205,7 +205,11 @@ class TempStylePlotter:
             print(f"添加插图时发生错误: {e}")
             print("继续生成主地图...")
     
-    def create_temp_map(self, output_path, resolution="03s", add_labels=False, title="地震台站分布图", cpt_file=None, show_colorbar=False, draw_coast=True, add_inset=False, inset_region=None, inset_position="jBR+o0.1c"):
+    def create_temp_map(self, output_path, resolution="03s", add_labels=False, 
+                        title="地震台站分布图", cpt_file=None, show_colorbar=False, 
+                        draw_coast=True, add_inset=False, inset_region=None, 
+                        inset_position="jBR+o0.1c", draw_faults=False, 
+                        faults_file=None):
         """创建基于temp_map.png配色的地震台站分布图"""
         if not self.stations:
             raise ValueError("无台站数据")
@@ -259,12 +263,12 @@ class TempStylePlotter:
             
             try:
                 import subprocess
-                import tempfile
                 import os
                 
                 # 创建缓存文件名 - 使用grd格式而不是nc格式
                 lon_min, lon_max, lat_min, lat_max = self.region
-                cache_name = f"relief_{gmt_res}_{lon_min:.1f}_{lon_max:.1f}_{lat_min:.1f}_{lat_max:.1f}.grd"
+                cache_name = (f"relief_{gmt_res}_{lon_min:.1f}_{lon_max:.1f}_"
+                              f"{lat_min:.1f}_{lat_max:.1f}.grd")
                 temp_relief = os.path.join("cache", cache_name)
                 
                 # 创建缓存目录
@@ -279,8 +283,9 @@ class TempStylePlotter:
                     # 构建GMT命令下载数据 - 强制使用grd格式
                     gmt_region = f"{lon_min}/{lon_max}/{lat_min}/{lat_max}"
                     
+                    conda_bin_path = os.path.dirname(os.path.dirname(sys.executable))
                     cmd = [
-                        f"{os.path.dirname(os.path.dirname(sys.executable))}/bin/gmt",
+                        f"{conda_bin_path}/bin/gmt",
                         "grdcut", 
                         f"@earth_relief_{gmt_res}_g",  # 使用_g后缀强制grd格式
                         f"-R{gmt_region}",
@@ -413,6 +418,33 @@ class TempStylePlotter:
                         print(f"替代方法也失败: {e2}，继续绘制其他要素...")
             else:
                 print("跳过海岸线绘制")
+            
+            # 绘制断层数据 - 在地形背景之后，台站数据之前
+            if draw_faults:
+                print("绘制中国断层数据...")
+                try:
+                    # 确定断层数据文件路径
+                    if faults_file and os.path.exists(faults_file):
+                        fault_path = faults_file
+                    else:
+                        fault_path = "china-geospatial-data/CN-faults.gmt"
+                    
+                    if os.path.exists(fault_path):
+                        print(f"使用断层数据文件: {fault_path}")
+                        # 绘制断层线，使用红色细线
+                        fig.plot(
+                            data=fault_path,
+                            pen="0.8p,red",     # 0.8点宽的红色线条
+                            transparency=20     # 20%透明度，避免过于突出
+                        )
+                        print("断层数据绘制完成")
+                    else:
+                        print(f"警告: 断层数据文件未找到: {fault_path}")
+                        print("跳过断层绘制，继续绘制其他要素...")
+                        
+                except Exception as e:
+                    print(f"绘制断层数据时发生错误: {e}")
+                    print("跳过断层绘制，继续绘制其他要素...")
             
             # 提取台站经纬度
             lons = [s['longitude'] for s in self.stations]
@@ -586,6 +618,8 @@ def main():
     parser.add_argument('--inset', action='store_true', help='添加插图矩形区域显示主地图在更大区域中的位置')
     parser.add_argument('--inset-region', help='插图显示区域 lon_min/lon_max/lat_min/lat_max (例: 110/125/35/45)')
     parser.add_argument('--inset-position', default='jBR+o0.1c', help='插图位置 (默认: jBR+o0.1c 右下角偏移0.1cm)')
+    parser.add_argument('--faults', action='store_true', help='绘制中国断层数据')
+    parser.add_argument('--faults-file', help='自定义断层数据文件路径 (默认使用china-geospatial-data/CN-faults.gmt)')
     
     args = parser.parse_args()
     
@@ -618,7 +652,9 @@ def main():
             draw_coast=not args.no_coast,
             add_inset=getattr(args, 'inset', False),
             inset_region=getattr(args, 'inset_region', None),
-            inset_position=getattr(args, 'inset_position', 'jBR+o0.1c')
+            inset_position=getattr(args, 'inset_position', 'jBR+o0.1c'),
+            draw_faults=getattr(args, 'faults', False),
+            faults_file=getattr(args, 'faults_file', None)
         )
     except Exception as e:
         print(f"生成地图失败: {e}")
