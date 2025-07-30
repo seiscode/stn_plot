@@ -1,6 +1,6 @@
 # 地震台站分布图绘制工具 (Station Plot Tool)
 
-本项目由[地震数据处理小组](https://github.com/seiscode/cp_ppsd/blob/main/README_CN.md#地震数据处理小组简介)研发，是一个基于Python的地震台站分布图绘制工具，支持多种配色方案和自定义地形渲染。该工具基于[PyGMT](https://github.com/GenericMappingTools/pygmt)库实现，支持dataless和StationXML格式文件。
+本项目由[地震数据处理小组](#地震数据处理小组简介)研发，是一个基于Python的地震台站分布图绘制工具，支持多种配色方案和自定义地形渲染。该工具基于[PyGMT](https://github.com/GenericMappingTools/pygmt)库实现，支持dataless和StationXML格式文件。
 
 ## 功能特点
 
