@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
 """
+Author:
+    muly (muly@cea-igp.ac.cn)
+license:
+    MIT License
+    (https://opensource.org/licenses/MIT)
+    
 生成CPT配色方案预览图片的脚本
 为cpt目录下的每个CPT文件生成对应的PNG预览图
 """
