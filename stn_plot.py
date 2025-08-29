@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
-地震台站分布图绘制工具
-
 Author:
     muly (muly@cea-igp.ac.cn)
 license:
     MIT License
     (https://opensource.org/licenses/MIT)
+    
+地震台站分布图绘制工具
 """
 
 import argparse
